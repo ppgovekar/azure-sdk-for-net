@@ -73,22 +73,22 @@ namespace ServiceBus.Tests.ScenarioTests
                 var createQueueResponse = this.ServiceBusManagementClient.Queues.CreateOrUpdate(resourceGroup, namespaceName, queueName,
                 new SBQueue() { EnableExpress = true, EnableBatchedOperations = true});
 
-                Assert.NotNull(createQueueResponse);
-                Assert.Equal(createQueueResponse.Name, queueName);
                 Assert.True(createQueueResponse.EnableExpress);
                 
                 // Get the created Queue
-                var getQueueResponse = ServiceBusManagementClient.Queues.Get(resourceGroup, namespaceName, queueName);
-                Assert.NotNull(getQueueResponse);
-                Assert.Equal(EntityStatus.Active, getQueueResponse.Status);
-                Assert.Equal(getQueueResponse.Name, queueName);
-                  
+                var queueGetResponse = ServiceBusManagementClient.Queues.Get(resourceGroup, namespaceName, queueName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(createQueueResponse, queueGetResponse));
+
                 // Get all Queues
                 var getQueueListAllResponse = ServiceBusManagementClient.Queues.ListByNamespace(resourceGroup, namespaceName);
                 Assert.NotNull(getQueueListAllResponse);
                 Assert.True(getQueueListAllResponse.Count() >= 1);                
                 Assert.True(getQueueListAllResponse.All(ns => ns.Id.Contains(resourceGroup)));
 
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 // Create Queue1
                 var queueName1 = TestUtilities.GenerateName(ServiceBusManagementHelper.QueuesPrefix);
@@ -108,11 +108,17 @@ namespace ServiceBus.Tests.ScenarioTests
                 };
 
                 var updateQueueResponse = ServiceBusManagementClient.Queues.CreateOrUpdate(resourceGroup, namespaceName, queueName, updateQueuesParameter);
-                Assert.NotNull(updateQueueResponse);
-                Assert.True(updateQueueResponse.EnableExpress);
-                Assert.Equal(updateQueueResponse.ForwardTo, queueName1);
-                Assert.Equal(updateQueueResponse.ForwardDeadLetteredMessagesTo, queueName1);
 
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(updateQueuesParameter, updateQueueResponse));
+
+                var getQueueResponse = ServiceBusManagementClient.Queues.Get(resourceGroup, namespaceName, queueName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getQueueResponse.UpdatedAt, queueGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(updateQueueResponse, getQueueResponse));
 
                 // Update Queue with max AutoDeletOnIdeal. 
                 var updateQueuesADonIParameter = new SBQueue()
@@ -126,13 +132,18 @@ namespace ServiceBus.Tests.ScenarioTests
                 };
 
                 var updateQueueADonIResponse = ServiceBusManagementClient.Queues.CreateOrUpdate(resourceGroup, namespaceName, queueName, updateQueuesADonIParameter);
-                Assert.NotNull(updateQueueADonIResponse);
-                Assert.True(updateQueueADonIResponse.EnableExpress);
-                Assert.Equal(updateQueueADonIResponse.ForwardTo, queueName1);
-                Assert.Equal(updateQueueADonIResponse.ForwardDeadLetteredMessagesTo, queueName1);
-                Assert.Equal(updateQueueADonIResponse.AutoDeleteOnIdle, TimeSpan.MaxValue);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(10));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(updateQueueADonIResponse.UpdatedAt, queueGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(updateQueuesADonIParameter, updateQueueADonIResponse));
+
+                getQueueResponse = ServiceBusManagementClient.Queues.Get(resourceGroup, namespaceName, queueName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getQueueResponse.UpdatedAt, queueGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(updateQueueADonIResponse, getQueueResponse));
 
                 // Update Queue with max DefaultMessageTimeToLive. 
                 var updateQueuesTtlParameter = new SBQueue()
@@ -147,12 +158,18 @@ namespace ServiceBus.Tests.ScenarioTests
                 };
 
                 var updateQueueTtlResponse = ServiceBusManagementClient.Queues.CreateOrUpdate(resourceGroup, namespaceName, queueName, updateQueuesTtlParameter);
-                Assert.NotNull(updateQueueTtlResponse);
-                Assert.True(updateQueueTtlResponse.EnableExpress);
-                Assert.Equal(updateQueueTtlResponse.ForwardTo, queueName1);
-                Assert.True(updateQueueTtlResponse.DeadLetteringOnMessageExpiration);
-                Assert.Equal(updateQueueTtlResponse.ForwardDeadLetteredMessagesTo, queueName1);
-                Assert.Equal(updateQueueTtlResponse.DefaultMessageTimeToLive, TimeSpan.MaxValue);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(updateQueueTtlResponse.UpdatedAt, queueGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(updateQueuesTtlParameter, updateQueueTtlResponse));
+
+                getQueueResponse = ServiceBusManagementClient.Queues.Get(resourceGroup, namespaceName, queueName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getQueueResponse.UpdatedAt, queueGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateQueueParams(updateQueueTtlResponse, getQueueResponse));
 
                 // Delete Created Queue 
                 ServiceBusManagementClient.Queues.Delete(resourceGroup, namespaceName, queueName);

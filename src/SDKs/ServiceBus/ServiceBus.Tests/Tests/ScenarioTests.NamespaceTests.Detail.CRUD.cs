@@ -100,10 +100,14 @@ namespace ServiceBus.Tests.ScenarioTests
 
                 var updateNamespaceResponse = ServiceBusManagementClient.Namespaces.CreateOrUpdate(resourceGroup, namespaceName, updateNamespaceParameter);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceParameter, updateNamespaceResponse));
 
                 // Get the updated namespace
                 getNamespaceResponse = ServiceBusManagementClient.Namespaces.Get(resourceGroup, namespaceName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceResponse, getNamespaceResponse));
 
@@ -126,10 +130,14 @@ namespace ServiceBus.Tests.ScenarioTests
 
                 var updateNamespaceSkuResponse = ServiceBusManagementClient.Namespaces.CreateOrUpdate(resourceGroup, namespaceName, updateNamespaceSkuParameter);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceSkuParameter, updateNamespaceSkuResponse));
 
                 // Get the updated namespace
                 getNamespaceResponse = ServiceBusManagementClient.Namespaces.Get(resourceGroup, namespaceName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceSkuResponse, getNamespaceResponse));
 
@@ -145,11 +153,15 @@ namespace ServiceBus.Tests.ScenarioTests
                 };
 
                 var updateNamespaceSkuStdResponse = ServiceBusManagementClient.Namespaces.CreateOrUpdate(resourceGroup, namespaceName, updateNamespaceSkuStdParameter);
+                            
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceSkuStdParameter, updateNamespaceSkuStdResponse));
 
                 // Get the updated namespace
                 getNamespaceResponse = ServiceBusManagementClient.Namespaces.Get(resourceGroup, namespaceName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceSkuStdResponse, getNamespaceResponse));
 
@@ -160,7 +172,7 @@ namespace ServiceBus.Tests.ScenarioTests
                 Assert.NotNull(createTopicResponse);
                 Assert.Equal(createTopicResponse.Name, topicName);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 //Update namespace sku tier to Basic
                 var updateNamespaceSkuBasicParameter = new SBNamespace()
@@ -182,7 +194,7 @@ namespace ServiceBus.Tests.ScenarioTests
                     Assert.Equal("Operation returned an invalid status code 'Conflict'", e.Message);
                 }
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 // Delete Created Topics 
                 ServiceBusManagementClient.Topics.Delete(resourceGroup, namespaceName, topicName);
@@ -193,6 +205,8 @@ namespace ServiceBus.Tests.ScenarioTests
                 // Check that namespace is deleted
                 getAllNamespacesResponse = ServiceBusManagementClient.Namespaces.ListByResourceGroupAsync(resourceGroup).Result;
                 Assert.DoesNotContain(getAllNamespacesResponse, ns => ns.Name == namespaceName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(5));
 
 
                 // Create Premium Namespace
@@ -208,7 +222,8 @@ namespace ServiceBus.Tests.ScenarioTests
                         Sku = new SBSku
                         {
                             Name = SkuName.Premium,
-                            Tier = SkuTier.Premium
+                            Tier = SkuTier.Premium,
+                            Capacity = 1
                         },
                         Tags = new Dictionary<string, string>()
                         {
@@ -220,7 +235,7 @@ namespace ServiceBus.Tests.ScenarioTests
                 Assert.NotNull(createPremNamespaceResponse);
                 Assert.Equal(createPremNamespaceResponse.Name, namespaceNamePrem);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 // Get the created namespace
                 var getPremNamespaceResponse = ServiceBusManagementClient.Namespaces.Get(resourceGroup, namespaceNamePrem);
@@ -258,9 +273,14 @@ namespace ServiceBus.Tests.ScenarioTests
 
                 var updateNamespaceSkuPremResponse = ServiceBusManagementClient.Namespaces.CreateOrUpdate(resourceGroup, namespaceNamePrem, updateNamespaceSkuPremParameter);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
+                Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceSkuPremParameter, updateNamespaceSkuPremResponse));
+
+                // Get the updated namespace
                 getPremNamespaceResponse = ServiceBusManagementClient.Namespaces.Get(resourceGroup, namespaceNamePrem);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 Assert.True(ServiceBusTestValidationHelper.ValidateNamespaceParams(updateNamespaceSkuPremResponse, getPremNamespaceResponse));
 

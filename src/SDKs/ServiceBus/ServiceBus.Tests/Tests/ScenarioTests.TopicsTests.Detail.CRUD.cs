@@ -6,6 +6,7 @@ namespace ServiceBus.Tests.ScenarioTests
 {
     using System;
     using System.Linq;
+    using System.Threading;
     using Microsoft.Azure.Management.ServiceBus;
     using Microsoft.Azure.Management.ServiceBus.Models;
     using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
@@ -46,7 +47,7 @@ namespace ServiceBus.Tests.ScenarioTests
                 Assert.NotNull(createNamespaceResponse);
                 Assert.Equal(createNamespaceResponse.Name, namespaceName);
 
-                TestUtilities.Wait(TimeSpan.FromSeconds(5));
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
 
                 // Create Invalid TopicName
                 var topicNameGeneration = TestUtilities.GenerateName(ServiceBusManagementHelper.TopicPrefix);
@@ -67,15 +68,17 @@ namespace ServiceBus.Tests.ScenarioTests
                 var topicName = TestUtilities.GenerateName(ServiceBusManagementHelper.TopicPrefix);
                 var createTopicResponse = this.ServiceBusManagementClient.Topics.CreateOrUpdate(resourceGroup, namespaceName, topicName,
                 new SBTopic() { EnableExpress = true });
+
                 Assert.NotNull(createTopicResponse);
                 Assert.Equal(createTopicResponse.Name, topicName);
 
                 // Get the created topic
-                var getTopicResponse = ServiceBusManagementClient.Topics.Get(resourceGroup, namespaceName, topicName);
-                Assert.NotNull(getTopicResponse);
-                Assert.Equal(EntityStatus.Active, getTopicResponse.Status);
-                Assert.Equal(getTopicResponse.Name, topicName);
-                                
+                var topicGetResponse = ServiceBusManagementClient.Topics.Get(resourceGroup, namespaceName, topicName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(createTopicResponse, topicGetResponse));
+
                 // Get all Topics   
                 var getTopicsListAllResponse = ServiceBusManagementClient.Topics.ListByNamespace(resourceGroup, namespaceName);
                 Assert.NotNull(getTopicsListAllResponse);
@@ -86,25 +89,37 @@ namespace ServiceBus.Tests.ScenarioTests
                 var updateTopicsParameter = new SBTopic() {EnableExpress = true};
 
                 var updateTopicsResponse = ServiceBusManagementClient.Topics.CreateOrUpdate(resourceGroup, namespaceName, topicName, updateTopicsParameter);
-                Assert.NotNull(updateTopicsResponse);
-                Assert.True(updateTopicsResponse.EnableExpress);
-                Assert.NotEqual(updateTopicsResponse.UpdatedAt, getTopicResponse.UpdatedAt);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(updateTopicsResponse.UpdatedAt, topicGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(updateTopicsParameter, updateTopicsResponse));
 
                 // Get the created topic to check the Updated values. 
-                getTopicResponse = ServiceBusManagementClient.Topics.Get(resourceGroup, namespaceName, topicName);
-                Assert.NotNull(getTopicResponse);
-                Assert.Equal(EntityStatus.Active, getTopicResponse.Status);
-                Assert.Equal(getTopicResponse.Name, topicName);
-                Assert.True(updateTopicsResponse.EnableExpress);
-                Assert.NotEqual(updateTopicsResponse.UpdatedAt, getTopicResponse.UpdatedAt);
-                
+                var getTopicResponse = ServiceBusManagementClient.Topics.Get(resourceGroup, namespaceName, topicName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getTopicResponse.UpdatedAt, topicGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(updateTopicsResponse, getTopicResponse));
+
                 // Update Topic AutoDelete
                 var updateTopicsAutoDeleteParameter = new SBTopic() { EnableExpress = true, AutoDeleteOnIdle = TimeSpan.MaxValue };
 
                 var updateTopicsAutoDeleteResponse = ServiceBusManagementClient.Topics.CreateOrUpdate(resourceGroup, namespaceName, topicName, updateTopicsAutoDeleteParameter);
-                Assert.NotNull(updateTopicsAutoDeleteResponse);
-                Assert.Equal(updateTopicsAutoDeleteResponse.AutoDeleteOnIdle, TimeSpan.MaxValue);
-                Assert.NotEqual(updateTopicsAutoDeleteResponse.UpdatedAt, getTopicResponse.UpdatedAt);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(updateTopicsAutoDeleteResponse.UpdatedAt, topicGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(updateTopicsAutoDeleteParameter, updateTopicsAutoDeleteResponse));
+
+                // Get the created topic to check the Updated values. 
+                getTopicResponse = ServiceBusManagementClient.Topics.Get(resourceGroup, namespaceName, topicName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getTopicResponse.UpdatedAt, topicGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(updateTopicsAutoDeleteResponse, getTopicResponse));
 
                 // Update Topic Ttl
                 var updateTopicsTtlParameter = new SBTopic()
@@ -116,17 +131,25 @@ namespace ServiceBus.Tests.ScenarioTests
                 };
 
                 var updateTopicsTtlResponse = ServiceBusManagementClient.Topics.CreateOrUpdate(resourceGroup, namespaceName, topicName, updateTopicsTtlParameter);
-                Assert.NotNull(updateTopicsTtlResponse);
-                Assert.Equal(updateTopicsTtlResponse.DefaultMessageTimeToLive, TimeSpan.MaxValue);
-                Assert.Equal(updateTopicsTtlResponse.AutoDeleteOnIdle, TimeSpan.MaxValue);
-                Assert.Equal(updateTopicsTtlResponse.MaxSizeInMegabytes, updateTopicsTtlParameter.MaxSizeInMegabytes);
-                Assert.NotEqual(updateTopicsAutoDeleteResponse.UpdatedAt, getTopicResponse.UpdatedAt);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(updateTopicsTtlResponse.UpdatedAt, topicGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(updateTopicsTtlParameter, updateTopicsTtlResponse));
+
+                // Get the created topic to check the Updated values. 
+                getTopicResponse = ServiceBusManagementClient.Topics.Get(resourceGroup, namespaceName, topicName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getTopicResponse.UpdatedAt, topicGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateTopicParams(updateTopicsTtlResponse, getTopicResponse));
 
                 // Delete Created Topics 
                 ServiceBusManagementClient.Topics.Delete(resourceGroup, namespaceName, topicName);                
 
                 // Delete namespace                                   
-                ServiceBusManagementClient.Namespaces.Delete(resourceGroup, namespaceName);                
+                ServiceBusManagementClient.Namespaces.DeleteWithHttpMessagesAsync(resourceGroup, namespaceName, null, new CancellationToken()).ConfigureAwait(false);
             }
         }
     }

@@ -99,9 +99,10 @@ namespace ServiceBus.Tests.ScenarioTests
 
                 // Get Created Subscription
                 var subscriptionGetResponse = ServiceBusManagementClient.Subscriptions.Get(resourceGroup, namespaceName, topicName, subscriptionName);
-                Assert.NotNull(subscriptionGetResponse);
-                Assert.Equal(EntityStatus.Active, subscriptionGetResponse.Status);
-                Assert.Equal(subscriptionGetResponse.Name, subscriptionName);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.True(ServiceBusTestValidationHelper.ValidateSubParams(createSubscriptionResponse, subscriptionGetResponse));
 
                 // Get all Subscriptions  
                 var getSubscriptionsListAllResponse = ServiceBusManagementClient.Subscriptions.ListByTopic(resourceGroup, namespaceName,topicName);
@@ -127,17 +128,19 @@ namespace ServiceBus.Tests.ScenarioTests
                 };
 
                 var updateSubscriptionsResponse = ServiceBusManagementClient.Subscriptions.CreateOrUpdate(resourceGroup, namespaceName, topicName,subscriptionName,updateSubscriptionParameter);
-                Assert.NotNull(updateSubscriptionsResponse);
-                Assert.True(updateSubscriptionsResponse.EnableBatchedOperations);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
                 Assert.NotEqual(updateSubscriptionsResponse.UpdatedAt, subscriptionGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateSubParams(updateSubscriptionParameter, updateSubscriptionsResponse));
 
                 // Get the updated subscription to check the Updated values. 
                 var getSubscriptionsResponse = ServiceBusManagementClient.Subscriptions.Get(resourceGroup, namespaceName, topicName,subscriptionName);
-                Assert.NotNull(getSubscriptionsResponse);
-                Assert.Equal(EntityStatus.Active, getSubscriptionsResponse.Status);
-                Assert.Equal(getSubscriptionsResponse.Name, subscriptionName);
-                Assert.True(getSubscriptionsResponse.EnableBatchedOperations);
-                Assert.NotEqual(getSubscriptionsResponse.UpdatedAt, createSubscriptionResponse.UpdatedAt);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
+                Assert.NotEqual(getSubscriptionsResponse.UpdatedAt, subscriptionGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateSubParams(updateSubscriptionsResponse, getSubscriptionsResponse));
 
                 // Update Subscription to all values. 
                 var updateSubscriptionAllParameter = new SBSubscription()
@@ -154,22 +157,20 @@ namespace ServiceBus.Tests.ScenarioTests
             };
 
                 var updateSubscriptionsAllResponse = ServiceBusManagementClient.Subscriptions.CreateOrUpdate(resourceGroup, namespaceName, topicName, subscriptionName, updateSubscriptionAllParameter);
-                Assert.NotNull(updateSubscriptionsAllResponse);
-                Assert.True(updateSubscriptionsAllResponse.EnableBatchedOperations);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
                 Assert.NotEqual(updateSubscriptionsAllResponse.UpdatedAt, subscriptionGetResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateSubParams(updateSubscriptionAllParameter, updateSubscriptionsAllResponse));
+                
 
                 // Get the updated subscription to check the Updated values. 
                 var getSubscriptionsAllResponse = ServiceBusManagementClient.Subscriptions.Get(resourceGroup, namespaceName, topicName, subscriptionName);
-                Assert.NotNull(getSubscriptionsAllResponse);
-                Assert.Equal(EntityStatus.Active, getSubscriptionsAllResponse.Status);
-                Assert.Equal(getSubscriptionsAllResponse.Name, subscriptionName);
-                Assert.True(getSubscriptionsAllResponse.EnableBatchedOperations);
-                Assert.True(getSubscriptionsAllResponse.DeadLetteringOnFilterEvaluationExceptions);
-                Assert.Equal(getSubscriptionsAllResponse.DefaultMessageTimeToLive, TimeSpan.MaxValue);
-                Assert.Equal(getSubscriptionsAllResponse.AutoDeleteOnIdle, TimeSpan.MaxValue);
-                Assert.Equal(getSubscriptionsAllResponse.MaxDeliveryCount, updateSubscriptionAllParameter.MaxDeliveryCount);
-                Assert.Equal(getSubscriptionsAllResponse.LockDuration, updateSubscriptionAllParameter.LockDuration);
+
+                TestUtilities.Wait(TimeSpan.FromSeconds(2));
+
                 Assert.NotEqual(getSubscriptionsAllResponse.UpdatedAt, createSubscriptionResponse.UpdatedAt);
+                Assert.True(ServiceBusTestValidationHelper.ValidateSubParams(updateSubscriptionsAllResponse, getSubscriptionsAllResponse));
 
                 // Delete Created Subscription
                 ServiceBusManagementClient.Subscriptions.Delete(resourceGroup, namespaceName, topicName, subscriptionName);
